@@ -1,0 +1,143 @@
+@host = http://127.0.0.1:8000
+@api = {{host}}/api/v1
+@contentType = application/json
+
+### 健康检查
+GET {{host}}/health
+
+### 注册
+# @name register
+POST {{api}}/auth/register
+Content-Type: {{contentType}}
+
+{
+  "username": "demo_user",
+  "email": "demo@example.com",
+  "password": "password123"
+}
+
+### 登录
+# @name login
+POST {{api}}/auth/login
+Content-Type: application/x-www-form-urlencoded
+
+username=demo_user&password=password123
+
+> {%
+    client.global.set("token", response.body.access_token);
+%}
+
+### 当前用户
+GET {{api}}/auth/me
+Authorization: Bearer {{token}}
+
+### 创建学习项目
+# @name createCourse
+POST {{api}}/courses
+Authorization: Bearer {{token}}
+Content-Type: {{contentType}}
+
+{
+  "name": "FastAPI 入门",
+  "description": "学习路由、依赖注入和数据库",
+  "color": "#6657e8"
+}
+
+> {%
+    client.global.set("courseId", response.body.id);
+%}
+
+### 项目列表
+GET {{api}}/courses
+Authorization: Bearer {{token}}
+
+### 更新项目
+PATCH {{api}}/courses/{{courseId}}
+Authorization: Bearer {{token}}
+Content-Type: {{contentType}}
+
+{
+  "description": "已经完成基础 CRUD"
+}
+
+### 创建任务
+# @name createTask
+POST {{api}}/tasks
+Authorization: Bearer {{token}}
+Content-Type: {{contentType}}
+
+{
+  "course_id": {{courseId}},
+  "title": "理解 FastAPI 依赖注入",
+  "description": "写三个 Depends 示例",
+  "priority": "high",
+  "estimated_minutes": 45
+}
+
+> {%
+    client.global.set("taskId", response.body.id);
+%}
+
+### 任务列表：按项目和状态筛选
+GET {{api}}/tasks?course_id={{courseId}}&status=todo&page=1&page_size=20
+Authorization: Bearer {{token}}
+
+### 开始任务
+PATCH {{api}}/tasks/{{taskId}}
+Authorization: Bearer {{token}}
+Content-Type: {{contentType}}
+
+{
+  "status": "in_progress"
+}
+
+### 完成任务
+PATCH {{api}}/tasks/{{taskId}}
+Authorization: Bearer {{token}}
+Content-Type: {{contentType}}
+
+{
+  "status": "done"
+}
+
+### 学习打卡
+POST {{api}}/study-logs
+Authorization: Bearer {{token}}
+Content-Type: {{contentType}}
+
+{
+  "course_id": {{courseId}},
+  "task_id": {{taskId}},
+  "minutes": 45,
+  "studied_on": "2026-11-22",
+  "note": "理解了路径参数、查询参数和依赖注入"
+}
+
+### 学习记录
+GET {{api}}/study-logs?page=1&page_size=20
+Authorization: Bearer {{token}}
+
+### 总览统计
+GET {{api}}/stats/overview?days=14
+Authorization: Bearer {{token}}
+
+### 分项目统计
+GET {{api}}/stats/courses
+Authorization: Bearer {{token}}
+
+### 归档项目
+PATCH {{api}}/courses/{{courseId}}
+Authorization: Bearer {{token}}
+Content-Type: {{contentType}}
+
+{
+  "is_archived": true
+}
+
+### 删除任务
+DELETE {{api}}/tasks/{{taskId}}
+Authorization: Bearer {{token}}
+
+### 删除项目
+DELETE {{api}}/courses/{{courseId}}
+Authorization: Bearer {{token}}
